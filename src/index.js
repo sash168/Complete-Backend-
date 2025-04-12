@@ -13,6 +13,11 @@ connectDB()
     .catch((err) => {
         console.error('Error connecting to MongoDB:', err);
     });
+
+    app.on('error', (error) => {
+            console.log("Error : " + error);
+            throw error
+    })
 // import express from 'express';
 
 // const app = express()
