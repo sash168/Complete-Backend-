@@ -26,3 +26,5 @@ const uploadFile = async (filepath) => {
     }
     
 }
+
+export { uploadFile };

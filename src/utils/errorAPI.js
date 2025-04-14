@@ -19,3 +19,5 @@ class errorAPI extends Error{
         }
     }
 }
+
+export { errorAPI };
