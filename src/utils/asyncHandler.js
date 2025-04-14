@@ -1,12 +1,12 @@
 const asyncHandler = (requestHandler) => {
-    (req, res, next) => {
+    return (req, res, next) => {
         Promise.then(
             requestHandler(req, res, next)
         ).catch((err) => next(err))
     }
 }
 
-
+export default asyncHandler;
 // //higher order function
 // const asyncHandler = (func) => async (req, res, next) => {
 //     try {
