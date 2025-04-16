@@ -30,7 +30,6 @@ const userSchema = mongoose.Schema({
     },
     coverimage: {
         type: String, //cloudinary url
-        required: true,
         unique: true,
         lowercase: true,
         trim: true

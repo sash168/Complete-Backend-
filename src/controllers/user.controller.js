@@ -3,10 +3,15 @@ import { User } from '../models/user.models.js';
 import { errorAPI } from '../utils/errorAPI.js';
 import { responseAPI } from '../utils/responseAPI.js';
 import { uploadFile } from '../utils/cloudinary.js';
+import jwt from 'JsonWebTokenError';
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
-        const user = User.findById(userId);
+        const user = await User.findById(userId);
+
+        if (!user) {
+            throw new errorAPI(500, "no userid for access and refresh")
+        }
         const accessToken = user.createAccessToken();
         const refreshToken = user.createRefreshToken();
         
@@ -122,9 +127,7 @@ const loginUser = asyncHandler(async(req, res) => {
     if (!passwordCheck) {
         throw new errorAPI(400, "please enter correct passwoed");
     }
-    console.log("before refresh : " + refreshToken);
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
-    console.log("before after : " + refreshToken);
     
     const loggedInUser = await User.findById(user._id).select("-password -refreshtoken");
 
@@ -161,6 +164,8 @@ const logoutUser = asyncHandler(async (req, res) => {
         }
     )
 
+    console.log("id" + req.user._id);
+
     const options = {
             httpOnly: true,
             secure: true
@@ -168,10 +173,66 @@ const logoutUser = asyncHandler(async (req, res) => {
     
     return res
         .status(200)
-        .clearCookie("accessToken", accessToken, options)
-        .clearCookie("refreshToken", refreshToken, options)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
         .json(
             new responseAPI(200, {}, "Logged out successfully")
         )
 })
-export {registerUser, loginUser, logoutUser}
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    try {
+        //get refresh token from req body
+        //decode if the incoming refresh token
+        //get user from id
+        //compare incoming token with db token 
+        //pass to generateacessreftoken
+        //create new access and refresh
+        
+        const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+    
+        if (!incomingToken) {
+            throw new errorAPI(400, "Invalid incoming ref token");
+        }
+    
+        const decodedToken = jwt.verify(incomingToken, process.env.REFRESH_TOKEN_SECRET)
+    
+        if (!decodedToken) {
+            throw new errorAPI(400, "cant decode the ref token");
+        }
+    
+        const user = await User.findById(decodedToken?._id)
+    
+        if (!user) {
+            throw new errorAPI(400, "no user found");
+        }
+    
+        if (incomingToken !== user?.refreshtoken) {
+            throw new errorAPI(400, "both doesnt match");
+        }
+    
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    
+        const options = {
+            httpOnly: true,
+            secur: true
+        }
+    
+        return res.status(200)
+            .cookie(accessToken, accessToken, options)
+            .cookie(refreshToken, refreshToken, options)
+            .json(
+                new responseAPI(
+                    200,
+                    {
+                        accessToken, refreshToken
+                    },
+                    "Token updated"
+                )
+            )
+    } catch (error) {
+        throw new errorAPI(400, "Error in refresh Token ");
+    }
+
+})
+export {registerUser, loginUser, logoutUser, refreshAccessToken}
